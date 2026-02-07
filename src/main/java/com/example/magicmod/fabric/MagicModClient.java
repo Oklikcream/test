@@ -69,6 +69,14 @@ public class MagicModClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(MagicModFabric.OPEN_RESEARCH_UI_S2C, (client, handler, buf, responseSender) ->
                 client.execute(() -> MinecraftClient.getInstance().setScreen(new ResearchScreen())));
 
+
+        ClientPlayNetworking.registerGlobalReceiver(MagicModFabric.CLOSE_RESEARCH_UI_S2C, (client, handler, buf, responseSender) ->
+                client.execute(() -> {
+                    if (MinecraftClient.getInstance().currentScreen instanceof ResearchScreen) {
+                        MinecraftClient.getInstance().setScreen(null);
+                    }
+                }));
+
         ClientPlayNetworking.registerGlobalReceiver(MagicModFabric.SYNC_MAGIC_HUD_S2C, (client, handler, buf, responseSender) -> {
             int level = buf.readInt();
             int exp = buf.readInt();

@@ -26,8 +26,10 @@ public class ResearchScreen extends Screen {
             int x = left + col * 22;
             int y = top + row * 22;
             this.addDrawableChild(ButtonWidget.builder(Text.literal("."), b -> {
-                cells[idx] = !cells[idx];
-                b.setMessage(Text.literal(cells[idx] ? "#" : "."));
+                if (!cells[idx]) {
+                    cells[idx] = true;
+                    b.setMessage(Text.literal("#"));
+                }
             }).dimensions(x, y, 20, 20).build());
         }
 

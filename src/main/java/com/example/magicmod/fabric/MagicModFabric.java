@@ -32,6 +32,7 @@ public class MagicModFabric implements ModInitializer {
     public static final Identifier OPEN_MAGIC_UI_S2C = id("open_magic_ui");
     public static final Identifier OPEN_RESEARCH_UI_S2C = id("open_research_ui");
     public static final Identifier SYNC_MAGIC_HUD_S2C = id("sync_magic_hud");
+    public static final Identifier CLOSE_RESEARCH_UI_S2C = id("close_research_ui");
     public static final Identifier BIND_SPELL_C2S = id("bind_spell");
     public static final Identifier CAST_SPELL_C2S = id("cast_spell");
     public static final Identifier SUBMIT_RESEARCH_C2S = id("submit_research");
@@ -135,6 +136,7 @@ public class MagicModFabric implements ModInitializer {
                 if (result.type() == ArcaneCraftingResult.ResultType.SPELL_SCROLL) {
                     player.giveItemStack(SpellScrollItem.createForSpell(result.spellId()));
                     player.sendMessage(Text.literal("Создан свиток: " + result.spellId()).formatted(Formatting.GREEN), true);
+                    ServerPlayNetworking.send(player, CLOSE_RESEARCH_UI_S2C, new PacketByteBuf(io.netty.buffer.Unpooled.buffer()));
                 } else if (result.type() == ArcaneCraftingResult.ResultType.MAGIC_EXPLOSION) {
                     player.getWorld().createExplosion(player, player.getX(), player.getY(), player.getZ(), 2.0f, World.ExplosionSourceType.MOB);
                 } else {
