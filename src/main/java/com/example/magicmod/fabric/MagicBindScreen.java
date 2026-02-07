@@ -17,7 +17,7 @@ public class MagicBindScreen extends Screen {
     private final List<LearnedSpellEntry> options;
 
     public MagicBindScreen(MagicUiState state) {
-        super(Text.literal("Magic Binds"));
+        super(Text.literal("Magic Book"));
         this.state = state;
         this.options = new ArrayList<>();
         this.options.add(EMPTY);
