@@ -43,6 +43,7 @@ public class SpellScrollItem extends Item {
                 if (!user.isCreative()) {
                     stack.decrement(1);
                 }
+                MagicModFabric.sendHudSyncPacket(serverPlayer);
                 return new TypedActionResult<>(ActionResult.SUCCESS, stack);
             }
             user.sendMessage(Text.literal("Заклинание уже изучено или не существует."), true);
