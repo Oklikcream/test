@@ -2,6 +2,7 @@ package com.example.magicmod.fabric.mixin;
 
 import com.example.magicmod.PlayerMagicProfile;
 import com.example.magicmod.fabric.MagicPlayerDataHolder;
+import com.example.magicmod.fabric.MagicModFabric;
 import com.example.magicmod.fabric.MagicProfileNbt;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -47,5 +48,6 @@ public class PlayerEntityMixin implements MagicPlayerDataHolder {
             return;
         }
         magicmod$profile.regenerateMana(MANA_REGEN_AMOUNT);
+        MagicModFabric.sendHudSyncPacket((ServerPlayerEntity) player);
     }
 }

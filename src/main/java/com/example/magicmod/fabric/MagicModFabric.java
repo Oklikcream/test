@@ -26,12 +26,13 @@ public class MagicModFabric implements ModInitializer {
     public static final String MOD_ID = "magicmod";
 
     public static final Identifier OPEN_MAGIC_UI_S2C = id("open_magic_ui");
+    public static final Identifier SYNC_MAGIC_HUD_S2C = id("sync_magic_hud");
     public static final Identifier BIND_SPELL_C2S = id("bind_spell");
     public static final Identifier CAST_SPELL_C2S = id("cast_spell");
 
     public static final Item SPELL_SCROLL_ITEM = new SpellScrollItem(new FabricItemSettings().maxCount(1));
     public static final Item RESEARCH_SCROLL_ITEM = new ResearchScrollItem(new FabricItemSettings().maxCount(1));
-    public static final Item BLANK_SCROLL_ITEM = new Item(new FabricItemSettings().maxCount(64));
+    public static final Item BLANK_SCROLL_ITEM = new BlankScrollItem(new FabricItemSettings().maxCount(64));
 
     public static final SpellRegistry SPELL_REGISTRY = new SpellRegistry();
     public static final SpellEngine SPELL_ENGINE = new SpellEngine(SPELL_REGISTRY);
@@ -69,6 +70,7 @@ public class MagicModFabric implements ModInitializer {
                     profile.bindSpellToKey(slot, spellId);
                 }
                 sendOpenUiPacket(player);
+                sendHudSyncPacket(player);
             });
         });
 
@@ -83,7 +85,7 @@ public class MagicModFabric implements ModInitializer {
                 } else if (cast != CastResult.SUCCESS) {
                     player.sendMessage(Text.literal("Каст не удался: " + reasonForCastResult(cast)).formatted(Formatting.RED), true);
                 }
-                sendOpenUiPacket(player);
+                sendHudSyncPacket(player);
             });
         });
     }
@@ -100,7 +102,9 @@ public class MagicModFabric implements ModInitializer {
         learned.sort(String::compareTo);
         buf.writeInt(learned.size());
         for (String spellId : learned) {
+            Spell spell = SPELL_REGISTRY.get(spellId);
             buf.writeString(spellId);
+            buf.writeString(spell == null ? spellId : spell.displayName());
         }
 
         for (int i = 1; i <= 9; i++) {
@@ -109,6 +113,19 @@ public class MagicModFabric implements ModInitializer {
         }
 
         ServerPlayNetworking.send(player, OPEN_MAGIC_UI_S2C, buf);
+    }
+
+    public static void sendHudSyncPacket(ServerPlayerEntity player) {
+        PlayerMagicProfile profile = MagicPlayerData.get(player);
+        PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
+        buf.writeInt(profile.magicLevel());
+        buf.writeInt(profile.currentMana());
+        buf.writeInt(profile.maxMana());
+        for (int i = 1; i <= 9; i++) {
+            String bound = profile.spellForKey(i);
+            buf.writeString(bound == null ? "" : bound);
+        }
+        ServerPlayNetworking.send(player, SYNC_MAGIC_HUD_S2C, buf);
     }
 
     private static String reasonForCastResult(CastResult cast) {

@@ -18,7 +18,7 @@ public class MagicBindScreen extends Screen {
         super(Text.literal("Magic Interface"));
         this.state = state;
         if (!state.learnedSpells().isEmpty()) {
-            this.selectedSpell = state.learnedSpells().get(0);
+            this.selectedSpell = state.learnedSpells().get(0).id();
         }
     }
 
@@ -28,10 +28,10 @@ public class MagicBindScreen extends Screen {
         int top = this.height / 2 - 90;
 
         int y = top + 18;
-        for (String spellId : state.learnedSpells()) {
+        for (LearnedSpellEntry spell : state.learnedSpells()) {
             int finalY = y;
-            this.addDrawableChild(ButtonWidget.builder(Text.literal(spellId), b -> selectedSpell = spellId)
-                    .dimensions(left, finalY, 100, 20)
+            this.addDrawableChild(ButtonWidget.builder(Text.literal(spell.displayName() + " (" + spell.id() + ")"), b -> selectedSpell = spell.id())
+                    .dimensions(left, finalY, 165, 20)
                     .build());
             y += 22;
         }
@@ -40,7 +40,7 @@ public class MagicBindScreen extends Screen {
             final int s = slot;
             int row = (slot - 1) / 3;
             int col = (slot - 1) % 3;
-            int bx = left + 120 + col * 80;
+            int bx = left + 180 + col * 80;
             int by = top + 20 + row * 44;
 
             this.addDrawableChild(ButtonWidget.builder(Text.literal("Бинд " + slot), b -> {
@@ -49,11 +49,8 @@ public class MagicBindScreen extends Screen {
                 }
             }).dimensions(bx, by, 74, 20).build());
 
-            this.addDrawableChild(ButtonWidget.builder(Text.literal("Каст"), b -> sendCastPacket(s))
-                    .dimensions(bx, by + 22, 36, 18).build());
-
-            this.addDrawableChild(ButtonWidget.builder(Text.literal("X"), b -> sendBindPacket(s, ""))
-                    .dimensions(bx + 38, by + 22, 36, 18).build());
+            this.addDrawableChild(ButtonWidget.builder(Text.literal("Очистить"), b -> sendBindPacket(s, ""))
+                    .dimensions(bx, by + 22, 74, 18).build());
         }
     }
 
@@ -62,12 +59,6 @@ public class MagicBindScreen extends Screen {
         buf.writeInt(slot);
         buf.writeString(spellId);
         ClientPlayNetworking.send(MagicModFabric.BIND_SPELL_C2S, buf);
-    }
-
-    private void sendCastPacket(int slot) {
-        PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
-        buf.writeInt(slot);
-        ClientPlayNetworking.send(MagicModFabric.CAST_SPELL_C2S, buf);
     }
 
     @Override
@@ -79,11 +70,12 @@ public class MagicBindScreen extends Screen {
         int top = this.height / 2 - 90;
         context.drawText(this.textRenderer, Text.literal("Магия: ур. " + state.level() + " | Мана: " + state.mana() + "/" + state.maxMana()), left, top, 0xFFFFFF, false);
         context.drawText(this.textRenderer, Text.literal("Выбрано: " + (selectedSpell == null ? "-" : selectedSpell)), left, top + 95, 0xAAFFAA, false);
+        context.drawText(this.textRenderer, Text.literal("Каст теперь только с клавиатуры (1..9)."), left, top + 106, 0xFFD37F, false);
 
         List<String> bound = new ArrayList<>(state.boundSlots());
         for (int i = 0; i < bound.size(); i++) {
             String value = bound.get(i).isBlank() ? "пусто" : bound.get(i);
-            context.drawText(this.textRenderer, Text.literal((i + 1) + ": " + value), left, top + 112 + i * 10, 0xDDDDDD, false);
+            context.drawText(this.textRenderer, Text.literal((i + 1) + ": " + value), left, top + 118 + i * 10, 0xDDDDDD, false);
         }
     }
 }
