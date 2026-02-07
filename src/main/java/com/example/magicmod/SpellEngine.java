@@ -22,9 +22,6 @@ public final class SpellEngine {
         if (spell == null) {
             return CastResult.UNKNOWN_SPELL;
         }
-        if (profile.magicLevel() < spell.levelRequirement()) {
-            return CastResult.LEVEL_TOO_LOW;
-        }
         if (!profile.spendMana(spell.manaCost())) {
             return CastResult.NOT_ENOUGH_MANA;
         }
@@ -52,7 +49,6 @@ public final class SpellEngine {
         NOT_BOUND,
         NOT_LEARNED,
         UNKNOWN_SPELL,
-        LEVEL_TOO_LOW,
         NOT_ENOUGH_MANA
     }
 }

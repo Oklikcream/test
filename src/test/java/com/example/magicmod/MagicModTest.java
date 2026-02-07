@@ -92,7 +92,7 @@ class MagicModTest {
     @Test
     void castDetailedReturnsSpecificReasons() {
         SpellRegistry registry = new SpellRegistry();
-        registry.register(new Spell("blink", "Blink", 15, 2));
+        registry.register(new Spell("blink", "Blink", 15, 99));
         SpellEngine engine = new SpellEngine(registry);
         PlayerMagicProfile profile = new PlayerMagicProfile();
 
@@ -100,9 +100,6 @@ class MagicModTest {
 
         profile.learnSpell("blink");
         profile.bindSpellToKey(1, "blink");
-        assertEquals(SpellEngine.CastResult.LEVEL_TOO_LOW, engine.castBoundSpellDetailed(profile, 1));
-
-        profile.grantExperience(500); // raise level
         while (profile.currentMana() > 10) {
             profile.spendMana(10);
         }

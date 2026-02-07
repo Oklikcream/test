@@ -17,26 +17,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MagicModClient implements ClientModInitializer {
-    private static final KeyBinding[] CAST_KEYS = new KeyBinding[9];
+    private static KeyBinding prevSpellKey;
+    private static KeyBinding nextSpellKey;
+    private static KeyBinding castKey;
     private static MagicHudState hudState = MagicHudState.empty();
+    private static int selectedSlot = 1;
 
     @Override
     public void onInitializeClient() {
-        for (int i = 0; i < 9; i++) {
-            int glfwKey = GLFW.GLFW_KEY_1 + i;
-            CAST_KEYS[i] = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                    "key.magicmod.cast_" + (i + 1),
-                    InputUtil.Type.KEYSYM,
-                    glfwKey,
-                    "category.magicmod"
-            ));
-        }
+        prevSpellKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.magicmod.prev_spell", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_COMMA, "category.magicmod"));
+        nextSpellKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.magicmod.next_spell", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_PERIOD, "category.magicmod"));
+        castKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.magicmod.cast_selected", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_R, "category.magicmod"));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            for (int i = 0; i < 9; i++) {
-                while (CAST_KEYS[i].wasPressed()) {
-                    sendCastPacket(i + 1);
-                }
+            while (prevSpellKey.wasPressed()) {
+                selectedSlot = selectedSlot == 1 ? 9 : selectedSlot - 1;
+            }
+            while (nextSpellKey.wasPressed()) {
+                selectedSlot = selectedSlot == 9 ? 1 : selectedSlot + 1;
+            }
+            while (castKey.wasPressed()) {
+                sendCastPacket(selectedSlot);
             }
         });
 
@@ -62,6 +63,9 @@ public class MagicModClient implements ClientModInitializer {
             MagicUiState state = new MagicUiState(level, mana, maxMana, learned, bound);
             client.execute(() -> MinecraftClient.getInstance().setScreen(new MagicBindScreen(state)));
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(MagicModFabric.OPEN_RESEARCH_UI_S2C, (client, handler, buf, responseSender) ->
+                client.execute(() -> MinecraftClient.getInstance().setScreen(new ResearchScreen())));
 
         ClientPlayNetworking.registerGlobalReceiver(MagicModFabric.SYNC_MAGIC_HUD_S2C, (client, handler, buf, responseSender) -> {
             int level = buf.readInt();
@@ -89,14 +93,22 @@ public class MagicModClient implements ClientModInitializer {
             return;
         }
         context.drawText(client.textRenderer, Text.literal("Mana: " + hudState.mana() + "/" + hudState.maxMana() + " | Lv." + hudState.level()), 8, 8, 0x66CCFF, true);
-        StringBuilder sb = new StringBuilder("[1-9] ");
+        context.drawText(client.textRenderer, Text.literal("Spell: < / > | Cast: R | Selected slot: " + selectedSlot), 8, 20, 0xFFD37F, true);
+
+        StringBuilder sb = new StringBuilder("Slots ");
         for (int i = 0; i < 9; i++) {
             String s = hudState.boundSlots().get(i);
+            if (i + 1 == selectedSlot) {
+                sb.append('[');
+            }
             sb.append(i + 1).append(':').append(s.isBlank() ? '-' : s);
+            if (i + 1 == selectedSlot) {
+                sb.append(']');
+            }
             if (i < 8) {
                 sb.append("  ");
             }
         }
-        context.drawText(client.textRenderer, Text.literal(sb.toString()), 8, 20, 0xFFFFFF, true);
+        context.drawText(client.textRenderer, Text.literal(sb.toString()), 8, 32, 0xFFFFFF, true);
     }
 }

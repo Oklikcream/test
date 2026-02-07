@@ -9,6 +9,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -18,6 +19,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +28,11 @@ public class MagicModFabric implements ModInitializer {
     public static final String MOD_ID = "magicmod";
 
     public static final Identifier OPEN_MAGIC_UI_S2C = id("open_magic_ui");
+    public static final Identifier OPEN_RESEARCH_UI_S2C = id("open_research_ui");
     public static final Identifier SYNC_MAGIC_HUD_S2C = id("sync_magic_hud");
     public static final Identifier BIND_SPELL_C2S = id("bind_spell");
     public static final Identifier CAST_SPELL_C2S = id("cast_spell");
+    public static final Identifier SUBMIT_RESEARCH_C2S = id("submit_research");
 
     public static final Item SPELL_SCROLL_ITEM = new SpellScrollItem(new FabricItemSettings().maxCount(1));
     public static final Item RESEARCH_SCROLL_ITEM = new ResearchScrollItem(new FabricItemSettings().maxCount(1));
@@ -88,6 +92,42 @@ public class MagicModFabric implements ModInitializer {
                 sendHudSyncPacket(player);
             });
         });
+
+        ServerPlayNetworking.registerGlobalReceiver(SUBMIT_RESEARCH_C2S, (server, player, handler, buf, sender) -> {
+            String pattern = buf.readString();
+            server.execute(() -> {
+                if (pattern.length() != 81) {
+                    return;
+                }
+                ArcaneCraftingResult result = WORKBENCH.craft(pattern);
+                if (result.type() == ArcaneCraftingResult.ResultType.SPELL_SCROLL) {
+                    player.giveItemStack(SpellScrollItem.createForSpell(result.spellId()));
+                    SPELL_ENGINE.applyCraftingResult(MagicPlayerData.get(player), result);
+                    consumeOneBlankScroll(player);
+                    player.sendMessage(Text.literal("Создан свиток: " + result.spellId()).formatted(Formatting.GREEN), true);
+                } else if (result.type() == ArcaneCraftingResult.ResultType.MAGIC_EXPLOSION) {
+                    consumeOneBlankScroll(player);
+                    player.getWorld().createExplosion(player, player.getX(), player.getY(), player.getZ(), 2.0f, World.ExplosionSourceType.MOB);
+                } else {
+                    player.sendMessage(Text.literal("Ничего не получилось."), true);
+                }
+                sendOpenUiPacket(player);
+                sendHudSyncPacket(player);
+            });
+        });
+    }
+
+    private static void consumeOneBlankScroll(ServerPlayerEntity player) {
+        if (player.isCreative()) {
+            return;
+        }
+        for (int i = 0; i < player.getInventory().size(); i++) {
+            ItemStack stack = player.getInventory().getStack(i);
+            if (stack.isOf(BLANK_SCROLL_ITEM)) {
+                stack.decrement(1);
+                break;
+            }
+        }
     }
 
     public static void sendOpenUiPacket(ServerPlayerEntity player) {
@@ -115,6 +155,10 @@ public class MagicModFabric implements ModInitializer {
         ServerPlayNetworking.send(player, OPEN_MAGIC_UI_S2C, buf);
     }
 
+    public static void sendOpenResearchUiPacket(ServerPlayerEntity player) {
+        ServerPlayNetworking.send(player, OPEN_RESEARCH_UI_S2C, new PacketByteBuf(io.netty.buffer.Unpooled.buffer()));
+    }
+
     public static void sendHudSyncPacket(ServerPlayerEntity player) {
         PlayerMagicProfile profile = MagicPlayerData.get(player);
         PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
@@ -133,7 +177,6 @@ public class MagicModFabric implements ModInitializer {
             case NOT_BOUND -> "слот не привязан";
             case NOT_LEARNED -> "заклинание не изучено";
             case UNKNOWN_SPELL -> "заклинание не найдено";
-            case LEVEL_TOO_LOW -> "недостаточный уровень";
             case NOT_ENOUGH_MANA -> "не хватает маны";
             default -> "неизвестная ошибка";
         };

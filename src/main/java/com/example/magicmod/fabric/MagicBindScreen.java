@@ -70,7 +70,7 @@ public class MagicBindScreen extends Screen {
         int top = this.height / 2 - 90;
         context.drawText(this.textRenderer, Text.literal("Магия: ур. " + state.level() + " | Мана: " + state.mana() + "/" + state.maxMana()), left, top, 0xFFFFFF, false);
         context.drawText(this.textRenderer, Text.literal("Выбрано: " + (selectedSpell == null ? "-" : selectedSpell)), left, top + 95, 0xAAFFAA, false);
-        context.drawText(this.textRenderer, Text.literal("Каст теперь только с клавиатуры (1..9)."), left, top + 106, 0xFFD37F, false);
+        context.drawText(this.textRenderer, Text.literal("Каст: < / > выбрать слот, R применить."), left, top + 106, 0xFFD37F, false);
 
         List<String> bound = new ArrayList<>(state.boundSlots());
         for (int i = 0; i < bound.size(); i++) {
