@@ -52,11 +52,13 @@ public class ResearchScreen extends Screen {
     }
 
     @Override
+    public boolean shouldPause() {
+        return false;
+    }
+    
+    @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
-        int left = this.width / 2 - 58;
-        int top = this.height / 2 - 78;
-        context.drawText(this.textRenderer, Text.literal("Blank Scroll: закрашивай 5x5 и жми Синтез"), left, top, 0xFFFFFF, false);
     }
 }
