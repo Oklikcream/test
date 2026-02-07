@@ -3,7 +3,7 @@
   "id": "magicmod",
   "version": "${version}",
   "name": "Magic Mod",
-  "description": "Simple magic mod: scrolls, research, mana and leveling.",
+  "description": "Simple magic mod: scrolls, magic book, mana and leveling.",
   "authors": [
     "Codex + User"
   ],
