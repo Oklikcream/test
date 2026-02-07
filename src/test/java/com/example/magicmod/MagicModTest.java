@@ -43,12 +43,12 @@ class MagicModTest {
         registry.register(new Spell("blink", "Blink", 15, 1));
         PlayerMagicProfile profile = new PlayerMagicProfile();
         profile.learnSpell("blink");
-        profile.bindSpellToKey(49, "blink");
+        profile.bindSpellToKey(1, "blink");
 
         SpellEngine engine = new SpellEngine(registry);
         int manaBefore = profile.currentMana();
 
-        assertTrue(engine.castBoundSpell(profile, 49));
+        assertTrue(engine.castBoundSpell(profile, 1));
         assertTrue(profile.currentMana() < manaBefore);
         assertTrue(profile.magicExperience() > 0);
     }
@@ -61,4 +61,64 @@ class MagicModTest {
         assertTrue(profile.magicLevel() > 1);
         assertTrue(profile.maxMana() > oldMax);
     }
+
+    @Test
+    void bindingMenuModelSupportsUnbind() {
+        PlayerMagicProfile profile = new PlayerMagicProfile();
+        profile.learnSpell("blink");
+        profile.bindSpellToKey(2, "blink");
+
+        assertEquals("blink", profile.spellForKey(2));
+        profile.unbindKey(2);
+        assertNull(profile.spellForKey(2));
+    }
+
+    @Test
+    void craftingNewSpellGivesExpOnlyOnce() {
+        SpellRegistry registry = new SpellRegistry();
+        registry.register(new Spell("fireball", "Fireball", 20, 1));
+        SpellEngine engine = new SpellEngine(registry);
+        PlayerMagicProfile profile = new PlayerMagicProfile();
+
+        ArcaneCraftingResult craftResult = ArcaneCraftingResult.spell("fireball");
+        assertTrue(engine.applyCraftingResult(profile, craftResult));
+        int expAfterFirstCraft = profile.magicExperience();
+
+        assertTrue(engine.applyCraftingResult(profile, craftResult));
+        assertEquals(expAfterFirstCraft, profile.magicExperience());
+    }
+
+
+    @Test
+    void castDetailedReturnsSpecificReasons() {
+        SpellRegistry registry = new SpellRegistry();
+        registry.register(new Spell("blink", "Blink", 15, 2));
+        SpellEngine engine = new SpellEngine(registry);
+        PlayerMagicProfile profile = new PlayerMagicProfile();
+
+        assertEquals(SpellEngine.CastResult.NOT_BOUND, engine.castBoundSpellDetailed(profile, 1));
+
+        profile.learnSpell("blink");
+        profile.bindSpellToKey(1, "blink");
+        assertEquals(SpellEngine.CastResult.LEVEL_TOO_LOW, engine.castBoundSpellDetailed(profile, 1));
+
+        profile.grantExperience(500); // raise level
+        while (profile.currentMana() > 10) {
+            profile.spendMana(10);
+        }
+        assertEquals(SpellEngine.CastResult.NOT_ENOUGH_MANA, engine.castBoundSpellDetailed(profile, 1));
+    }
+    @Test
+    void castDetailedSuccessWhenRequirementsMet() {
+        SpellRegistry registry = new SpellRegistry();
+        registry.register(new Spell("fireball", "Fireball", 20, 1));
+        SpellEngine engine = new SpellEngine(registry);
+        PlayerMagicProfile profile = new PlayerMagicProfile();
+
+        profile.learnSpell("fireball");
+        profile.bindSpellToKey(3, "fireball");
+
+        assertEquals(SpellEngine.CastResult.SUCCESS, engine.castBoundSpellDetailed(profile, 3));
+    }
+
 }
