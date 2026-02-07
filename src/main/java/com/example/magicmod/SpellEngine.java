@@ -10,20 +10,27 @@ public final class SpellEngine {
         this.registry = registry;
     }
 
-    public boolean castBoundSpell(PlayerMagicProfile profile, int keyCode) {
+    public CastResult castBoundSpellDetailed(PlayerMagicProfile profile, int keyCode) {
         String spellId = profile.spellForKey(keyCode);
-        if (spellId == null || !profile.hasSpell(spellId)) {
-            return false;
+        if (spellId == null) {
+            return CastResult.NOT_BOUND;
+        }
+        if (!profile.hasSpell(spellId)) {
+            return CastResult.NOT_LEARNED;
         }
         Spell spell = registry.get(spellId);
-        if (spell == null || profile.magicLevel() < spell.levelRequirement()) {
-            return false;
+        if (spell == null) {
+            return CastResult.UNKNOWN_SPELL;
         }
         if (!profile.spendMana(spell.manaCost())) {
-            return false;
+            return CastResult.NOT_ENOUGH_MANA;
         }
         profile.grantExperience(EXP_FOR_CAST);
-        return true;
+        return CastResult.SUCCESS;
+    }
+
+    public boolean castBoundSpell(PlayerMagicProfile profile, int keyCode) {
+        return castBoundSpellDetailed(profile, keyCode) == CastResult.SUCCESS;
     }
 
     public boolean applyCraftingResult(PlayerMagicProfile profile, ArcaneCraftingResult result) {
@@ -35,5 +42,13 @@ public final class SpellEngine {
             return true;
         }
         return result.type() == ArcaneCraftingResult.ResultType.NOTHING;
+    }
+
+    public enum CastResult {
+        SUCCESS,
+        NOT_BOUND,
+        NOT_LEARNED,
+        UNKNOWN_SPELL,
+        NOT_ENOUGH_MANA
     }
 }
