@@ -9,8 +9,8 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
-public class ResearchScrollItem extends Item {
-    public ResearchScrollItem(Settings settings) {
+public class MagicBookItem extends Item {
+    public MagicBookItem(Settings settings) {
         super(settings);
     }
 
