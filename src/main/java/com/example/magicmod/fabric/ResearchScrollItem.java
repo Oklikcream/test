@@ -17,7 +17,7 @@ public class ResearchScrollItem extends Item {
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         if (!world.isClient) {
-            user.sendMessage(Text.literal("Пока используй команду: /magic research <81-символьный-паттерн>"), false);
+            user.sendMessage(Text.literal("Используй исследование: /magic research <81-символьный-паттерн>; шаблон имитирует поле 9x9."), false);
         }
         return new TypedActionResult<>(ActionResult.SUCCESS, user.getStackInHand(hand));
     }
