@@ -1,19 +1,16 @@
 package com.example.magicmod.fabric;
 
-import com.example.magicmod.ArcaneCraftingResult;
 import com.example.magicmod.ArcaneWorkbench;
 import com.example.magicmod.PlayerMagicProfile;
 import com.example.magicmod.Spell;
 import com.example.magicmod.SpellEngine;
 import com.example.magicmod.SpellEngine.CastResult;
 import com.example.magicmod.SpellRegistry;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -23,15 +20,19 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
-import java.util.Comparator;
-
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MagicModFabric implements ModInitializer {
     public static final String MOD_ID = "magicmod";
+
+    public static final Identifier OPEN_MAGIC_UI_S2C = id("open_magic_ui");
+    public static final Identifier BIND_SPELL_C2S = id("bind_spell");
+    public static final Identifier CAST_SPELL_C2S = id("cast_spell");
+
     public static final Item SPELL_SCROLL_ITEM = new SpellScrollItem(new FabricItemSettings().maxCount(1));
     public static final Item RESEARCH_SCROLL_ITEM = new ResearchScrollItem(new FabricItemSettings().maxCount(1));
+    public static final Item BLANK_SCROLL_ITEM = new Item(new FabricItemSettings().maxCount(64));
 
     public static final SpellRegistry SPELL_REGISTRY = new SpellRegistry();
     public static final SpellEngine SPELL_ENGINE = new SpellEngine(SPELL_REGISTRY);
@@ -41,6 +42,7 @@ public class MagicModFabric implements ModInitializer {
     public void onInitialize() {
         Registry.register(Registries.ITEM, id("spell_scroll"), SPELL_SCROLL_ITEM);
         Registry.register(Registries.ITEM, id("research_scroll"), RESEARCH_SCROLL_ITEM);
+        Registry.register(Registries.ITEM, id("blank_scroll"), BLANK_SCROLL_ITEM);
 
         SPELL_REGISTRY.register(new Spell("fireball", "Fireball", 20, 1));
         SPELL_REGISTRY.register(new Spell("blink", "Blink", 15, 1));
@@ -50,110 +52,75 @@ public class MagicModFabric implements ModInitializer {
         WORKBENCH.registerSpellRecipe("d".repeat(81), "ice_spike");
         WORKBENCH.registerExplosionRecipe("b".repeat(81), "unstable_recipe");
 
-        registerCommands();
+        registerPackets();
     }
 
-    private static void registerCommands() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                literal("magic")
-                        .then(literal("give_scroll")
-                                .then(argument("spell", StringArgumentType.word())
-                                        .executes(ctx -> {
-                                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                                            String spellId = StringArgumentType.getString(ctx, "spell");
-                                            player.giveItemStack(SpellScrollItem.createForSpell(spellId));
-                                            ctx.getSource().sendFeedback(() -> Text.literal("Выдан свиток: " + spellId), false);
-                                            return 1;
-                                        })))
-                        .then(literal("level").executes(ctx -> {
-                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                            PlayerMagicProfile profile = MagicPlayerData.get(player);
-                            ctx.getSource().sendFeedback(() -> Text.literal("Маг. уровень: " + profile.magicLevel() + ", мана: " + profile.currentMana() + "/" + profile.maxMana() + ", exp: " + profile.magicExperience() + "/" + profile.expToNextLevel()), false);
-                            return 1;
-                        }))
-                        .then(literal("spells").executes(ctx -> {
-                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                            sendSpellList(player, MagicPlayerData.get(player));
-                            return 1;
-                        }))
-                        .then(literal("bind")
-                                .then(argument("key", IntegerArgumentType.integer(1, 9))
-                                        .then(argument("spell", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                                                    int key = IntegerArgumentType.getInteger(ctx, "key");
-                                                    String spellId = StringArgumentType.getString(ctx, "spell");
-                                                    PlayerMagicProfile profile = MagicPlayerData.get(player);
-                                                    if (!profile.hasSpell(spellId)) {
-                                                        player.sendMessage(Text.literal("Сначала изучи это заклинание: " + spellId).formatted(Formatting.RED), false);
-                                                        return 0;
-                                                    }
-                                                    profile.bindSpellToKey(key, spellId);
-                                                    player.sendMessage(Text.literal("Заклинание " + spellId + " привязано на слот " + key).formatted(Formatting.GREEN), false);
-                                                    return 1;
-                                                }))))
-                        .then(literal("unbind")
-                                .then(argument("key", IntegerArgumentType.integer(1, 9))
-                                        .executes(ctx -> {
-                                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                                            int key = IntegerArgumentType.getInteger(ctx, "key");
-                                            PlayerMagicProfile profile = MagicPlayerData.get(player);
-                                            profile.unbindKey(key);
-                                            player.sendMessage(Text.literal("Слот " + key + " очищен.").formatted(Formatting.YELLOW), false);
-                                            return 1;
-                                        })))
-                        .then(literal("bindings").executes(ctx -> {
-                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                            showBindings(player, MagicPlayerData.get(player));
-                            return 1;
-                        }))
-                        .then(literal("bind_menu").executes(ctx -> {
-                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                            sendBindingInterface(player, MagicPlayerData.get(player));
-                            return 1;
-                        }))
-                        .then(literal("ui").executes(ctx -> {
-                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                            sendBindingInterface(player, MagicPlayerData.get(player));
-                            return 1;
-                        }))
-                        .then(literal("cast")
-                                .then(argument("key", IntegerArgumentType.integer(1, 9))
-                                        .executes(ctx -> {
-                                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                                            int key = IntegerArgumentType.getInteger(ctx, "key");
-                                            PlayerMagicProfile profile = MagicPlayerData.get(player);
-                                            String spellId = profile.spellForKey(key);
-                                            CastResult cast = SPELL_ENGINE.castBoundSpellDetailed(profile, key);
-                                            if (cast == CastResult.SUCCESS) {
-                                                boolean effectDone = spellId != null && SpellEffects.cast(player, spellId);
-                                                if (effectDone) {
-                                                    player.sendMessage(Text.literal("Заклинание успешно применено из слота " + key + ".").formatted(Formatting.GREEN), false);
-                                                    return 1;
-                                                }
-                                                player.sendMessage(Text.literal("Мана потрачена, но для заклинания пока нет эффекта: " + spellId).formatted(Formatting.YELLOW), false);
-                                                return 1;
-                                            }
-                                            player.sendMessage(Text.literal("Не удалось применить заклинание: " + reasonForCastResult(cast)).formatted(Formatting.RED), false);
-                                            return 0;
-                                        })))
-                        .then(literal("research")
-                                .then(argument("pattern", StringArgumentType.greedyString())
-                                        .executes(ctx -> {
-                                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                                            ArcaneCraftingResult result = WORKBENCH.craft(StringArgumentType.getString(ctx, "pattern"));
-                                            if (result.type() == ArcaneCraftingResult.ResultType.SPELL_SCROLL) {
-                                                player.giveItemStack(SpellScrollItem.createForSpell(result.spellId()));
-                                                SPELL_ENGINE.applyCraftingResult(MagicPlayerData.get(player), result);
-                                                player.sendMessage(Text.literal("Открыт новый свиток: " + result.spellId()), false);
-                                            } else if (result.type() == ArcaneCraftingResult.ResultType.MAGIC_EXPLOSION) {
-                                                player.getWorld().createExplosion(player, player.getX(), player.getY(), player.getZ(), 2.0f, net.minecraft.world.World.ExplosionSourceType.MOB);
-                                            } else {
-                                                player.sendMessage(Text.literal("Рецепт не найден."), false);
-                                            }
-                                            return 1;
-                                        })))
-        ));
+    private static void registerPackets() {
+        ServerPlayNetworking.registerGlobalReceiver(BIND_SPELL_C2S, (server, player, handler, buf, sender) -> {
+            int slot = buf.readInt();
+            String spellId = buf.readString();
+            server.execute(() -> {
+                PlayerMagicProfile profile = MagicPlayerData.get(player);
+                if (slot < 1 || slot > 9) {
+                    return;
+                }
+                if (spellId.isBlank()) {
+                    profile.unbindKey(slot);
+                } else if (profile.hasSpell(spellId)) {
+                    profile.bindSpellToKey(slot, spellId);
+                }
+                sendOpenUiPacket(player);
+            });
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(CAST_SPELL_C2S, (server, player, handler, buf, sender) -> {
+            int slot = buf.readInt();
+            server.execute(() -> {
+                PlayerMagicProfile profile = MagicPlayerData.get(player);
+                String spellId = profile.spellForKey(slot);
+                CastResult cast = SPELL_ENGINE.castBoundSpellDetailed(profile, slot);
+                if (cast == CastResult.SUCCESS && spellId != null) {
+                    SpellEffects.cast(player, spellId);
+                } else if (cast != CastResult.SUCCESS) {
+                    player.sendMessage(Text.literal("Каст не удался: " + reasonForCastResult(cast)).formatted(Formatting.RED), true);
+                }
+                sendOpenUiPacket(player);
+            });
+        });
+    }
+
+    public static void sendOpenUiPacket(ServerPlayerEntity player) {
+        PlayerMagicProfile profile = MagicPlayerData.get(player);
+        PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
+
+        buf.writeInt(profile.magicLevel());
+        buf.writeInt(profile.currentMana());
+        buf.writeInt(profile.maxMana());
+
+        List<String> learned = new ArrayList<>(profile.learnedSpells());
+        learned.sort(String::compareTo);
+        buf.writeInt(learned.size());
+        for (String spellId : learned) {
+            buf.writeString(spellId);
+        }
+
+        for (int i = 1; i <= 9; i++) {
+            String bound = profile.spellForKey(i);
+            buf.writeString(bound == null ? "" : bound);
+        }
+
+        ServerPlayNetworking.send(player, OPEN_MAGIC_UI_S2C, buf);
+    }
+
+    private static String reasonForCastResult(CastResult cast) {
+        return switch (cast) {
+            case NOT_BOUND -> "слот не привязан";
+            case NOT_LEARNED -> "заклинание не изучено";
+            case UNKNOWN_SPELL -> "заклинание не найдено";
+            case LEVEL_TOO_LOW -> "недостаточный уровень";
+            case NOT_ENOUGH_MANA -> "не хватает маны";
+            default -> "неизвестная ошибка";
+        };
     }
 
     private static void sendSpellList(ServerPlayerEntity player, PlayerMagicProfile profile) {
