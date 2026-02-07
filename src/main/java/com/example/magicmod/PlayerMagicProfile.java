@@ -90,4 +90,18 @@ public final class PlayerMagicProfile {
     public Map<Integer, String> keyBinds() {
         return Collections.unmodifiableMap(keyBinds);
     }
+
+    public MagicProfileSnapshot snapshot() {
+        return new MagicProfileSnapshot(learnedSpells, keyBinds, magicLevel, magicExperience, currentMana);
+    }
+
+    public void applySnapshot(MagicProfileSnapshot snapshot) {
+        learnedSpells.clear();
+        learnedSpells.addAll(snapshot.learnedSpells());
+        keyBinds.clear();
+        keyBinds.putAll(snapshot.keyBinds());
+        magicLevel = Math.max(1, snapshot.magicLevel());
+        magicExperience = Math.max(0, snapshot.magicExperience());
+        currentMana = Math.max(0, Math.min(snapshot.currentMana(), maxMana()));
+    }
 }
