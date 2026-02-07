@@ -83,6 +83,10 @@ public final class PlayerMagicProfile {
         keyBinds.put(keyCode, spellId);
     }
 
+    public void unbindKey(int keyCode) {
+        keyBinds.remove(keyCode);
+    }
+
     public String spellForKey(int keyCode) {
         return keyBinds.get(keyCode);
     }
