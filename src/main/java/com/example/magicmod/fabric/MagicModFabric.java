@@ -1,9 +1,7 @@
 package com.example.magicmod.fabric;
 
-import com.example.magicmod.ArcaneCraftingResult;
 import com.example.magicmod.ArcaneWorkbench;
 import com.example.magicmod.PlayerMagicProfile;
-import com.example.magicmod.Spell;
 import com.example.magicmod.SpellEngine;
 import com.example.magicmod.SpellEngine.CastResult;
 import com.example.magicmod.SpellRegistry;
@@ -16,6 +14,8 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
