@@ -37,7 +37,7 @@ public class MagicModFabric implements ModInitializer {
     public static final Identifier SUBMIT_RESEARCH_C2S = id("submit_research");
 
     public static final Item SPELL_SCROLL_ITEM = new SpellScrollItem(new FabricItemSettings().maxCount(1));
-    public static final Item RESEARCH_SCROLL_ITEM = new ResearchScrollItem(new FabricItemSettings().maxCount(1));
+    public static final Item MAGIC_BOOK_ITEM = new MagicBookItem(new FabricItemSettings().maxCount(1));
     public static final Item BLANK_SCROLL_ITEM = new BlankScrollItem(new FabricItemSettings().maxCount(64));
 
     public static final SpellRegistry SPELL_REGISTRY = new SpellRegistry();
@@ -47,7 +47,7 @@ public class MagicModFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         Registry.register(Registries.ITEM, id("spell_scroll"), SPELL_SCROLL_ITEM);
-        Registry.register(Registries.ITEM, id("research_scroll"), RESEARCH_SCROLL_ITEM);
+        Registry.register(Registries.ITEM, id("magic_book"), MAGIC_BOOK_ITEM);
         Registry.register(Registries.ITEM, id("blank_scroll"), BLANK_SCROLL_ITEM);
 
         SPELL_REGISTRY.register(new Spell("fireball", "Fireball", 20, 1));
