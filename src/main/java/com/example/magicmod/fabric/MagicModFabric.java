@@ -2,7 +2,6 @@ package com.example.magicmod.fabric;
 
 import com.example.magicmod.ArcaneWorkbench;
 import com.example.magicmod.PlayerMagicProfile;
-import com.example.magicmod.Spell;
 import com.example.magicmod.SpellEngine;
 import com.example.magicmod.SpellEngine.CastResult;
 import com.example.magicmod.SpellRegistry;
@@ -120,65 +119,6 @@ public class MagicModFabric implements ModInitializer {
             case LEVEL_TOO_LOW -> "недостаточный уровень";
             case NOT_ENOUGH_MANA -> "не хватает маны";
             default -> "неизвестная ошибка";
-        };
-    }
-
-    private static void sendSpellList(ServerPlayerEntity player, PlayerMagicProfile profile) {
-        if (profile.learnedSpells().isEmpty()) {
-            player.sendMessage(Text.literal("У тебя пока нет изученных заклинаний.").formatted(Formatting.GRAY), false);
-            return;
-        }
-        player.sendMessage(Text.literal("Изученные заклинания:").formatted(Formatting.LIGHT_PURPLE), false);
-        SPELL_REGISTRY.all().stream()
-                .filter(spell -> profile.hasSpell(spell.id()))
-                .sorted(Comparator.comparing(Spell::id))
-                .forEach(spell -> player.sendMessage(Text.literal("- " + spell.id() + " [" + spell.displayName() + "]").formatted(Formatting.AQUA), false));
-    }
-
-    private static void showBindings(ServerPlayerEntity player, PlayerMagicProfile profile) {
-        player.sendMessage(Text.literal("Бинды (слоты 1..9):").formatted(Formatting.GOLD), false);
-        for (int i = 1; i <= 9; i++) {
-            String bound = profile.spellForKey(i);
-            String line = "[" + i + "] " + (bound == null ? "пусто" : bound);
-            player.sendMessage(Text.literal(line), false);
-        }
-    }
-
-    private static void sendBindingInterface(ServerPlayerEntity player, PlayerMagicProfile profile) {
-        player.sendMessage(Text.literal("=== Магическое меню (чат-интерфейс) ===").formatted(Formatting.LIGHT_PURPLE), false);
-        player.sendMessage(Text.literal("[Обновить бинды]").styled(style -> style
-                .withColor(Formatting.GOLD)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/magic bindings"))), false);
-
-        if (profile.learnedSpells().isEmpty()) {
-            player.sendMessage(Text.literal("Изучи свиток, чтобы появились варианты бинда.").formatted(Formatting.GRAY), false);
-            return;
-        }
-
-        player.sendMessage(Text.literal("Нажми на слот для привязки:").formatted(Formatting.AQUA), false);
-        profile.learnedSpells().stream().sorted().forEach(spellId -> {
-            MutableText row = Text.literal(spellId + " -> ");
-            for (int slot = 1; slot <= 9; slot++) {
-                int bindSlot = slot;
-                row.append(Text.literal("[" + slot + "]").styled(style -> style
-                        .withColor(Formatting.GREEN)
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/magic bind " + bindSlot + " " + spellId))));
-                if (slot < 9) {
-                    row.append(Text.literal(" "));
-                }
-            }
-            player.sendMessage(row, false);
-        });
-    }
-
-    private static String reasonForCastResult(CastResult cast) {
-        return switch (cast) {
-            case NOT_BOUND -> "На этом слоте нет бинда.";
-            case NOT_LEARNED -> "Заклинание привязано, но еще не изучено.";
-            case UNKNOWN_SPELL -> "Заклинание не найдено в реестре.";
-            case LEVEL_TOO_LOW -> "Недостаточный уровень магии.";
-            case NOT_ENOUGH_MANA -> "Недостаточно маны.";
-            default -> "Неизвестная ошибка каста.";
         };
     }
 
