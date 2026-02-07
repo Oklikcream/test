@@ -1,7 +1,12 @@
 package com.example.magicmod.fabric;
 
-import com.example.magicmod.*;
+import com.example.magicmod.ArcaneCraftingResult;
+import com.example.magicmod.ArcaneWorkbench;
+import com.example.magicmod.PlayerMagicProfile;
+import com.example.magicmod.Spell;
+import com.example.magicmod.SpellEngine;
 import com.example.magicmod.SpellEngine.CastResult;
+import com.example.magicmod.SpellRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -48,23 +53,37 @@ public class MagicModFabric implements ModInitializer {
         SPELL_REGISTRY.register(new Spell("fireball", "Fireball", 20, 1));
         SPELL_REGISTRY.register(new Spell("blink", "Blink", 15, 1));
         SPELL_REGISTRY.register(new Spell("ice_spike", "Ice Spike", 25, 2));
-        WORKBENCH.registerSpellRecipe(centerPattern('a'), "fireball");
-        WORKBENCH.registerSpellRecipe(centerPattern('c'), "blink");
-        WORKBENCH.registerSpellRecipe(centerPattern('d'), "ice_spike");
-        WORKBENCH.registerExplosionRecipe(centerPattern('b'), "unstable_recipe");
+
+        WORKBENCH.registerSpellRecipe(pattern(
+                "_x_x_",
+                "xxxxx",
+                "_xxx_",
+                "xxxxx",
+                "_x_x_"), "fireball");
+        WORKBENCH.registerSpellRecipe(pattern(
+                "xx_xx",
+                "x___x",
+                "__x__",
+                "x___x",
+                "xx_xx"), "blink");
+        WORKBENCH.registerSpellRecipe(pattern(
+                "xxxxx",
+                "x_x_x",
+                "xx_xx",
+                "x_x_x",
+                "xxxxx"), "ice_spike");
+        WORKBENCH.registerExplosionRecipe(pattern(
+                "x_x_x",
+                "_x_x_",
+                "x_x_x",
+                "_x_x_",
+                "x_x_x"), "unstable_recipe");
 
         registerPackets();
     }
 
-    private static String centerPattern(char symbol) {
-        char[] data = new char[25];
-        java.util.Arrays.fill(data, '_');
-        for (int row = 1; row <= 3; row++) {
-            for (int col = 1; col <= 3; col++) {
-                data[row * 5 + col] = symbol;
-            }
-        }
-        return new String(data);
+    private static String pattern(String r1, String r2, String r3, String r4, String r5) {
+        return r1 + r2 + r3 + r4 + r5;
     }
 
     private static void registerPackets() {
@@ -107,7 +126,6 @@ public class MagicModFabric implements ModInitializer {
                 if (pattern.length() != 25) {
                     return;
                 }
-
                 if (!consumeOneBlankScroll(player)) {
                     player.sendMessage(Text.literal("Нужен blank_scroll для синтеза."), true);
                     return;
