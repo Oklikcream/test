@@ -43,6 +43,8 @@ public class MagicModClient implements ClientModInitializer {
 
         ClientPlayNetworking.registerGlobalReceiver(MagicModFabric.OPEN_MAGIC_UI_S2C, (client, handler, buf, responseSender) -> {
             int level = buf.readInt();
+            int exp = buf.readInt();
+            int expToNext = buf.readInt();
             int mana = buf.readInt();
             int maxMana = buf.readInt();
 
@@ -59,7 +61,7 @@ public class MagicModClient implements ClientModInitializer {
                 bound.add(buf.readString());
             }
 
-            hudState = new MagicHudState(level, mana, maxMana, bound);
+            hudState = new MagicHudState(level, exp, expToNext, mana, maxMana, bound);
             MagicUiState state = new MagicUiState(level, mana, maxMana, learned, bound);
             client.execute(() -> MinecraftClient.getInstance().setScreen(new MagicBindScreen(state)));
         });
@@ -69,13 +71,15 @@ public class MagicModClient implements ClientModInitializer {
 
         ClientPlayNetworking.registerGlobalReceiver(MagicModFabric.SYNC_MAGIC_HUD_S2C, (client, handler, buf, responseSender) -> {
             int level = buf.readInt();
+            int exp = buf.readInt();
+            int expToNext = buf.readInt();
             int mana = buf.readInt();
             int maxMana = buf.readInt();
             List<String> bound = new ArrayList<>();
             for (int i = 0; i < 9; i++) {
                 bound.add(buf.readString());
             }
-            hudState = new MagicHudState(level, mana, maxMana, bound);
+            hudState = new MagicHudState(level, exp, expToNext, mana, maxMana, bound);
         });
 
         HudRenderCallback.EVENT.register(this::renderHud);
@@ -92,7 +96,7 @@ public class MagicModClient implements ClientModInitializer {
         if (client.player == null || client.options.hudHidden) {
             return;
         }
-        context.drawText(client.textRenderer, Text.literal("Mana: " + hudState.mana() + "/" + hudState.maxMana() + " | Lv." + hudState.level()), 8, 8, 0x66CCFF, true);
+        context.drawText(client.textRenderer, Text.literal("Mana: " + hudState.mana() + "/" + hudState.maxMana() + " | Lv." + hudState.level() + " | Exp " + hudState.exp() + "/" + hudState.expToNext()), 8, 8, 0x66CCFF, true);
         context.drawText(client.textRenderer, Text.literal("Spell: < / > | Cast: R | Selected slot: " + selectedSlot), 8, 20, 0xFFD37F, true);
 
         StringBuilder sb = new StringBuilder("Slots ");

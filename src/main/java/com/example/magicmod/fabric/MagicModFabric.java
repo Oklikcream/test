@@ -51,12 +51,23 @@ public class MagicModFabric implements ModInitializer {
         SPELL_REGISTRY.register(new Spell("fireball", "Fireball", 20, 1));
         SPELL_REGISTRY.register(new Spell("blink", "Blink", 15, 1));
         SPELL_REGISTRY.register(new Spell("ice_spike", "Ice Spike", 25, 2));
-        WORKBENCH.registerSpellRecipe("a".repeat(81), "fireball");
-        WORKBENCH.registerSpellRecipe("c".repeat(81), "blink");
-        WORKBENCH.registerSpellRecipe("d".repeat(81), "ice_spike");
-        WORKBENCH.registerExplosionRecipe("b".repeat(81), "unstable_recipe");
+        WORKBENCH.registerSpellRecipe(centerPattern('a'), "fireball");
+        WORKBENCH.registerSpellRecipe(centerPattern('c'), "blink");
+        WORKBENCH.registerSpellRecipe(centerPattern('d'), "ice_spike");
+        WORKBENCH.registerExplosionRecipe(centerPattern('b'), "unstable_recipe");
 
         registerPackets();
+    }
+
+    private static String centerPattern(char symbol) {
+        char[] data = new char[25];
+        java.util.Arrays.fill(data, '_');
+        for (int row = 1; row <= 3; row++) {
+            for (int col = 1; col <= 3; col++) {
+                data[row * 5 + col] = symbol;
+            }
+        }
+        return new String(data);
     }
 
     private static void registerPackets() {
@@ -96,38 +107,41 @@ public class MagicModFabric implements ModInitializer {
         ServerPlayNetworking.registerGlobalReceiver(SUBMIT_RESEARCH_C2S, (server, player, handler, buf, sender) -> {
             String pattern = buf.readString();
             server.execute(() -> {
-                if (pattern.length() != 81) {
+                if (pattern.length() != 25) {
                     return;
                 }
+
+                if (!consumeOneBlankScroll(player)) {
+                    player.sendMessage(Text.literal("Нужен blank_scroll для синтеза."), true);
+                    return;
+                }
+
                 ArcaneCraftingResult result = WORKBENCH.craft(pattern);
                 if (result.type() == ArcaneCraftingResult.ResultType.SPELL_SCROLL) {
                     player.giveItemStack(SpellScrollItem.createForSpell(result.spellId()));
-                    SPELL_ENGINE.applyCraftingResult(MagicPlayerData.get(player), result);
-                    consumeOneBlankScroll(player);
                     player.sendMessage(Text.literal("Создан свиток: " + result.spellId()).formatted(Formatting.GREEN), true);
                 } else if (result.type() == ArcaneCraftingResult.ResultType.MAGIC_EXPLOSION) {
-                    consumeOneBlankScroll(player);
                     player.getWorld().createExplosion(player, player.getX(), player.getY(), player.getZ(), 2.0f, World.ExplosionSourceType.MOB);
                 } else {
                     player.sendMessage(Text.literal("Ничего не получилось."), true);
                 }
-                sendOpenUiPacket(player);
                 sendHudSyncPacket(player);
             });
         });
     }
 
-    private static void consumeOneBlankScroll(ServerPlayerEntity player) {
+    private static boolean consumeOneBlankScroll(ServerPlayerEntity player) {
         if (player.isCreative()) {
-            return;
+            return true;
         }
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
             if (stack.isOf(BLANK_SCROLL_ITEM)) {
                 stack.decrement(1);
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     public static void sendOpenUiPacket(ServerPlayerEntity player) {
@@ -135,6 +149,8 @@ public class MagicModFabric implements ModInitializer {
         PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
 
         buf.writeInt(profile.magicLevel());
+        buf.writeInt(profile.magicExperience());
+        buf.writeInt(profile.expToNextLevel());
         buf.writeInt(profile.currentMana());
         buf.writeInt(profile.maxMana());
 
@@ -163,6 +179,8 @@ public class MagicModFabric implements ModInitializer {
         PlayerMagicProfile profile = MagicPlayerData.get(player);
         PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
         buf.writeInt(profile.magicLevel());
+        buf.writeInt(profile.magicExperience());
+        buf.writeInt(profile.expToNextLevel());
         buf.writeInt(profile.currentMana());
         buf.writeInt(profile.maxMana());
         for (int i = 1; i <= 9; i++) {

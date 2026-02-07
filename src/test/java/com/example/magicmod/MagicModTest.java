@@ -21,8 +21,8 @@ class MagicModTest {
     @Test
     void arcaneWorkbenchSupportsSpellExplosionAndNothing() {
         ArcaneWorkbench workbench = new ArcaneWorkbench();
-        String spellPattern = "a".repeat(81);
-        String boomPattern = "b".repeat(81);
+        String spellPattern = "a".repeat(25);
+        String boomPattern = "b".repeat(25);
         workbench.registerSpellRecipe(spellPattern, "ice_spike");
         workbench.registerExplosionRecipe(boomPattern, "unstable runes");
 
@@ -33,7 +33,7 @@ class MagicModTest {
         ArcaneCraftingResult explosion = workbench.craft(boomPattern);
         assertEquals(ArcaneCraftingResult.ResultType.MAGIC_EXPLOSION, explosion.type());
 
-        ArcaneCraftingResult nothing = workbench.craft("c".repeat(81));
+        ArcaneCraftingResult nothing = workbench.craft("c".repeat(25));
         assertEquals(ArcaneCraftingResult.ResultType.NOTHING, nothing.type());
     }
 

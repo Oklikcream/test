@@ -4,70 +4,96 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.CyclingButtonWidget;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
 
+import java.util.List;
+
 public class ResearchScreen extends Screen {
-    private static final char[] SYMBOLS = new char[]{'_', 'a', 'b', 'c', 'd'};
-    private final char[] grid = new char[81];
+    private enum RuneOption {
+        EMPTY("Пусто", '_'),
+        FIRE("Fireball", 'a'),
+        CHAOS("Chaos", 'b'),
+        BLINK("Blink", 'c'),
+        ICE("Ice Spike", 'd');
+
+        private final String label;
+        private final char symbol;
+
+        RuneOption(String label, char symbol) {
+            this.label = label;
+            this.symbol = symbol;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    private final RuneOption[] cells = new RuneOption[9];
 
     public ResearchScreen() {
-        super(Text.literal("Research 9x9"));
-        for (int i = 0; i < grid.length; i++) {
-            grid[i] = '_';
+        super(Text.literal("Research (9 selectors)"));
+        for (int i = 0; i < cells.length; i++) {
+            cells[i] = RuneOption.EMPTY;
         }
     }
 
     @Override
     protected void init() {
-        int left = this.width / 2 - 92;
-        int top = this.height / 2 - 92;
-        int cell = 18;
+        int left = this.width / 2 - 130;
+        int top = this.height / 2 - 75;
 
-        for (int i = 0; i < 81; i++) {
+        for (int i = 0; i < 9; i++) {
             int idx = i;
-            int row = i / 9;
-            int col = i % 9;
-            int x = left + col * cell;
-            int y = top + row * cell;
-            this.addDrawableChild(ButtonWidget.builder(Text.literal(String.valueOf(grid[idx])), b -> {
-                grid[idx] = nextSymbol(grid[idx]);
-                b.setMessage(Text.literal(String.valueOf(grid[idx])));
-            }).dimensions(x, y, 16, 16).build());
+            int row = i / 3;
+            int col = i % 3;
+            int x = left + col * 88;
+            int y = top + row * 24;
+
+            this.addDrawableChild(CyclingButtonWidget.builder(option -> Text.literal(option.toString()))
+                    .values(List.of(RuneOption.values()))
+                    .initially(cells[idx])
+                    .build(x, y, 84, 20, Text.literal("S" + (i + 1)), (button, value) -> cells[idx] = value));
         }
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Синтез"), b -> submit())
-                .dimensions(left, top + 9 * cell + 8, 70, 20).build());
+                .dimensions(left, top + 84, 80, 20).build());
 
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("Очистить"), b -> this.client.setScreen(new ResearchScreen()))
-                .dimensions(left + 76, top + 9 * cell + 8, 70, 20).build());
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Сброс"), b -> this.client.setScreen(new ResearchScreen()))
+                .dimensions(left + 88, top + 84, 80, 20).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Закрыть"), b -> close())
-                .dimensions(left + 152, top + 9 * cell + 8, 70, 20).build());
+                .dimensions(left + 176, top + 84, 80, 20).build());
     }
 
     private void submit() {
         PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
-        buf.writeString(new String(grid));
+        buf.writeString(buildPattern25());
         ClientPlayNetworking.send(MagicModFabric.SUBMIT_RESEARCH_C2S, buf);
     }
 
-    private static char nextSymbol(char current) {
-        for (int i = 0; i < SYMBOLS.length; i++) {
-            if (SYMBOLS[i] == current) {
-                return SYMBOLS[(i + 1) % SYMBOLS.length];
-            }
+    private String buildPattern25() {
+        char[] pattern = new char[25];
+        java.util.Arrays.fill(pattern, '_');
+        for (int i = 0; i < 9; i++) {
+            int row = i / 3;
+            int col = i % 3;
+            int patternIndex = (row + 1) * 5 + (col + 1);
+            pattern[patternIndex] = cells[i].symbol;
         }
-        return SYMBOLS[0];
+        return new String(pattern);
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
-        int left = this.width / 2 - 92;
-        int top = this.height / 2 - 108;
-        context.drawText(this.textRenderer, Text.literal("Поле исследования 9x9 (символы _,a,b,c,d)"), left, top, 0xFFFFFF, false);
-        context.drawText(this.textRenderer, Text.literal("a*81=fireball, c*81=blink, d*81=ice_spike, b*81=взрыв"), left, top + 12, 0xAAAAAA, false);
+        int left = this.width / 2 - 130;
+        int top = this.height / 2 - 94;
+        context.drawText(this.textRenderer, Text.literal("Research: 9 выпадающих списков заклинаний"), left, top, 0xFFFFFF, false);
+        context.drawText(this.textRenderer, Text.literal("Нужен 1 blank_scroll на синтез"), left, top + 12, 0xAAAAAA, false);
     }
 }
