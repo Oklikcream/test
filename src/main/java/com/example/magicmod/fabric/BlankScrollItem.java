@@ -9,15 +9,15 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
-public class ResearchScrollItem extends Item {
-    public ResearchScrollItem(Settings settings) {
+public class BlankScrollItem extends Item {
+    public BlankScrollItem(Settings settings) {
         super(settings);
     }
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         if (!world.isClient && user instanceof ServerPlayerEntity serverPlayer) {
-            MagicModFabric.sendOpenUiPacket(serverPlayer);
+            MagicModFabric.sendOpenResearchUiPacket(serverPlayer);
         }
         return new TypedActionResult<>(ActionResult.SUCCESS, user.getStackInHand(hand));
     }

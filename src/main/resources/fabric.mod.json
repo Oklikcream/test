@@ -4,13 +4,18 @@
   "version": "${version}",
   "name": "Magic Mod",
   "description": "Simple magic mod: scrolls, research, mana and leveling.",
-  "authors": ["Codex + User"],
+  "authors": [
+    "Codex + User"
+  ],
   "contact": {},
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
     "main": [
       "com.example.magicmod.fabric.MagicModFabric"
+    ],
+    "client": [
+      "com.example.magicmod.fabric.MagicModClient"
     ]
   },
   "mixins": [
