@@ -1,10 +1,7 @@
 package com.example.magicmod.fabric;
 
-import com.example.magicmod.ArcaneWorkbench;
-import com.example.magicmod.PlayerMagicProfile;
-import com.example.magicmod.SpellEngine;
+import com.example.magicmod.*;
 import com.example.magicmod.SpellEngine.CastResult;
-import com.example.magicmod.SpellRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
