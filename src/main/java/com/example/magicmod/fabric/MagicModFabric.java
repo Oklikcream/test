@@ -49,9 +49,11 @@ public class MagicModFabric implements ModInitializer {
         Registry.register(Registries.ITEM, id("magic_book"), MAGIC_BOOK_ITEM);
         Registry.register(Registries.ITEM, id("blank_scroll"), BLANK_SCROLL_ITEM);
 
-        SPELL_REGISTRY.register(new Spell("fireball", "Fireball", 20, 1));
-        SPELL_REGISTRY.register(new Spell("blink", "Blink", 15, 1));
-        SPELL_REGISTRY.register(new Spell("ice_spike", "Ice Spike", 25, 2));
+        SPELL_REGISTRY.register(new Spell("fireball", "Огненный шар", "Мощный взрыв на дистанции. Большой урон по области.", 28));
+        SPELL_REGISTRY.register(new Spell("blink", "Скачок", "Быстрый телепорт вперёд, чтобы сменить позицию.", 18));
+        SPELL_REGISTRY.register(new Spell("ice_spike", "Ледяной шип", "Замораживает врагов рядом: сильное замедление и слабость.", 24));
+        SPELL_REGISTRY.register(new Spell("arcane_pulse", "Чародейский импульс", "Отталкивает и кратко оглушает врагов перед магом.", 20));
+        SPELL_REGISTRY.register(new Spell("healing_wave", "Волна восстановления", "Лечит мага и снимает часть негативных эффектов.", 26));
 
         WORKBENCH.registerSpellRecipe(pattern(
                 "_x_x_",
@@ -71,6 +73,18 @@ public class MagicModFabric implements ModInitializer {
                 "xx_xx",
                 "x_x_x",
                 "xxxxx"), "ice_spike");
+        WORKBENCH.registerSpellRecipe(pattern(
+                "__x__",
+                "_xxx_",
+                "xxxxx",
+                "_xxx_",
+                "__x__"), "arcane_pulse");
+        WORKBENCH.registerSpellRecipe(pattern(
+                "x___x",
+                "_x_x_",
+                "__x__",
+                "_x_x_",
+                "x___x"), "healing_wave");
         WORKBENCH.registerExplosionRecipe(pattern(
                 "x_x_x",
                 "_x_x_",
@@ -176,6 +190,8 @@ public class MagicModFabric implements ModInitializer {
             Spell spell = SPELL_REGISTRY.get(spellId);
             buf.writeString(spellId);
             buf.writeString(spell == null ? spellId : spell.displayName());
+            buf.writeString(spell == null ? "" : spell.description());
+            buf.writeInt(spell == null ? 0 : spell.manaCost());
         }
 
         for (int i = 1; i <= 9; i++) {

@@ -1,4 +1,4 @@
 package com.example.magicmod.fabric;
 
-public record LearnedSpellEntry(String id, String displayName) {
+public record LearnedSpellEntry(String id, String displayName, String description, int manaCost) {
 }
