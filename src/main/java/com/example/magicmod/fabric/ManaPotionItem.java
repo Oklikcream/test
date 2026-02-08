@@ -3,17 +3,18 @@ package com.example.magicmod.fabric;
 import com.example.magicmod.PlayerMagicProfile;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
+import net.minecraft.item.PotionItem;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
-public class ManaPotionItem extends Item {
+public class ManaPotionItem extends PotionItem {
     private static final int MANA_RESTORE = 45;
 
     public ManaPotionItem(Settings settings) {
@@ -41,6 +42,12 @@ public class ManaPotionItem extends Item {
             player.getInventory().insertStack(new ItemStack(Items.GLASS_BOTTLE));
         }
         return result;
+    }
+
+
+    @Override
+    public Text getName(ItemStack stack) {
+        return Text.translatable("item.magicmod.mana_potion");
     }
 
     @Override
