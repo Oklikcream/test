@@ -34,13 +34,10 @@ public class ResearchScreen extends Screen {
         }
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Синтез"), b -> submit())
-                .dimensions(left, top + 116, 70, 20).build());
-
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("Очистить"), b -> this.client.setScreen(new ResearchScreen()))
-                .dimensions(left + 74, top + 116, 70, 20).build());
+                .dimensions(left - 14, top + 116, 70, 20).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Закрыть"), b -> close())
-                .dimensions(left + 148, top + 116, 70, 20).build());
+                .dimensions(left + 60, top + 116, 70, 20).build());
     }
 
     private void submit() {

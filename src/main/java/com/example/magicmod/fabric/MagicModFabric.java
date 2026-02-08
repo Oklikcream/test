@@ -16,8 +16,6 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -38,7 +36,7 @@ public class MagicModFabric implements ModInitializer {
     public static final Identifier SUBMIT_RESEARCH_C2S = id("submit_research");
 
     public static final Item SPELL_SCROLL_ITEM = new SpellScrollItem(new FabricItemSettings().maxCount(1));
-    public static final Item MAGIC_BOOK_ITEM = new MagicBookItem(new FabricItemSettings().maxCount(1));
+    public static final Item MAGIC_BOOK_ITEM = new com.example.magicmod.fabric.MagicBookItem(new FabricItemSettings().maxCount(1));
     public static final Item BLANK_SCROLL_ITEM = new BlankScrollItem(new FabricItemSettings().maxCount(64));
 
     public static final SpellRegistry SPELL_REGISTRY = new SpellRegistry();
@@ -136,12 +134,12 @@ public class MagicModFabric implements ModInitializer {
                 if (result.type() == ArcaneCraftingResult.ResultType.SPELL_SCROLL) {
                     player.giveItemStack(SpellScrollItem.createForSpell(result.spellId()));
                     player.sendMessage(Text.literal("Создан свиток: " + result.spellId()).formatted(Formatting.GREEN), true);
-                    ServerPlayNetworking.send(player, CLOSE_RESEARCH_UI_S2C, new PacketByteBuf(io.netty.buffer.Unpooled.buffer()));
                 } else if (result.type() == ArcaneCraftingResult.ResultType.MAGIC_EXPLOSION) {
                     player.getWorld().createExplosion(player, player.getX(), player.getY(), player.getZ(), 2.0f, World.ExplosionSourceType.MOB);
                 } else {
                     player.sendMessage(Text.literal("Ничего не получилось."), true);
                 }
+                ServerPlayNetworking.send(player, CLOSE_RESEARCH_UI_S2C, new PacketByteBuf(io.netty.buffer.Unpooled.buffer()));
                 sendHudSyncPacket(player);
             });
         });

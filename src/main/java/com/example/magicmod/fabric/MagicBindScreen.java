@@ -73,6 +73,5 @@ public class MagicBindScreen extends Screen {
         int left = this.width / 2 - 160;
         int top = this.height / 2 - 104;
         context.drawText(this.textRenderer, Text.literal("Бинды заклинаний"), left, top, 0xFFFFFF, false);
-        context.drawText(this.textRenderer, Text.literal("Мана: " + state.mana() + "/" + state.maxMana() + " | Уровень: " + state.level()), left, top + 12, 0x66CCFF, false);
     }
 }
