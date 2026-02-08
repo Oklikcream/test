@@ -8,6 +8,7 @@ import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
 import net.minecraft.item.PotionItem;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
@@ -41,6 +42,12 @@ public class ManaPotionItem extends PotionItem {
             player.getInventory().insertStack(new ItemStack(Items.GLASS_BOTTLE));
         }
         return result;
+    }
+
+
+    @Override
+    public Text getName(ItemStack stack) {
+        return Text.translatable("item.magicmod.mana_potion");
     }
 
     @Override

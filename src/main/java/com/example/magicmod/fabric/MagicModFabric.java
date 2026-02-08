@@ -42,7 +42,7 @@ public class MagicModFabric implements ModInitializer {
     public static final Item SPELL_SCROLL_ITEM = new SpellScrollItem(new FabricItemSettings().maxCount(1));
     public static final Item MAGIC_BOOK_ITEM = new com.example.magicmod.fabric.MagicBookItem(new FabricItemSettings().maxCount(1));
     public static final Item BLANK_SCROLL_ITEM = new BlankScrollItem(new FabricItemSettings().maxCount(64));
-    public static final Item MANA_POTION_ITEM = new ManaPotionItem(new FabricItemSettings().maxCount(16));
+    public static final Item MANA_POTION_ITEM = new ManaPotionItem(new FabricItemSettings().maxCount(4));
 
     public static final SpellRegistry SPELL_REGISTRY = new SpellRegistry();
     public static final SpellEngine SPELL_ENGINE = new SpellEngine(SPELL_REGISTRY);
@@ -55,7 +55,7 @@ public class MagicModFabric implements ModInitializer {
         Registry.register(Registries.ITEM, id("blank_scroll"), BLANK_SCROLL_ITEM);
         Registry.register(Registries.ITEM, id("mana_potion"), MANA_POTION_ITEM);
 
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(MANA_POTION_ITEM));
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FOOD_AND_DRINK).register(entries -> entries.add(MANA_POTION_ITEM));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
             entries.add(BLANK_SCROLL_ITEM);
             entries.add(SPELL_SCROLL_ITEM);
