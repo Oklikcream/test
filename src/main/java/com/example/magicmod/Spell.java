@@ -5,14 +5,14 @@ import java.util.Objects;
 public final class Spell {
     private final String id;
     private final String displayName;
+    private final String description;
     private final int manaCost;
-    private final int levelRequirement;
 
-    public Spell(String id, String displayName, int manaCost, int levelRequirement) {
+    public Spell(String id, String displayName, String description, int manaCost) {
         this.id = Objects.requireNonNull(id);
         this.displayName = Objects.requireNonNull(displayName);
+        this.description = Objects.requireNonNull(description);
         this.manaCost = manaCost;
-        this.levelRequirement = levelRequirement;
     }
 
     public String id() {
@@ -23,11 +23,11 @@ public final class Spell {
         return displayName;
     }
 
-    public int manaCost() {
-        return manaCost;
+    public String description() {
+        return description;
     }
 
-    public int levelRequirement() {
-        return levelRequirement;
+    public int manaCost() {
+        return manaCost;
     }
 }

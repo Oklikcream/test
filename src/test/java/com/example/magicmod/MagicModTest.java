@@ -9,7 +9,7 @@ class MagicModTest {
     @Test
     void scrollLearnIsPermanent() {
         SpellRegistry registry = new SpellRegistry();
-        registry.register(new Spell("fireball", "Fireball", 20, 1));
+        registry.register(new Spell("fireball", "Fireball", "Boom", 20));
         PlayerMagicProfile profile = new PlayerMagicProfile();
 
         SpellScroll scroll = new SpellScroll("fireball");
@@ -40,7 +40,7 @@ class MagicModTest {
     @Test
     void bindingAndCastingConsumesManaAndGivesExp() {
         SpellRegistry registry = new SpellRegistry();
-        registry.register(new Spell("blink", "Blink", 15, 1));
+        registry.register(new Spell("blink", "Blink", "Jump", 15));
         PlayerMagicProfile profile = new PlayerMagicProfile();
         profile.learnSpell("blink");
         profile.bindSpellToKey(1, "blink");
@@ -63,6 +63,20 @@ class MagicModTest {
     }
 
     @Test
+    void spellsAreNotGatedByLevel() {
+        SpellRegistry registry = new SpellRegistry();
+        registry.register(new Spell("healing_wave", "Healing Wave", "Heal", 26));
+        SpellEngine engine = new SpellEngine(registry);
+        PlayerMagicProfile profile = new PlayerMagicProfile();
+
+        profile.learnSpell("healing_wave");
+        profile.bindSpellToKey(4, "healing_wave");
+
+        assertEquals(1, profile.magicLevel());
+        assertEquals(SpellEngine.CastResult.SUCCESS, engine.castBoundSpellDetailed(profile, 4));
+    }
+
+    @Test
     void bindingMenuModelSupportsUnbind() {
         PlayerMagicProfile profile = new PlayerMagicProfile();
         profile.learnSpell("blink");
@@ -76,7 +90,7 @@ class MagicModTest {
     @Test
     void craftingNewSpellGivesExpOnlyOnce() {
         SpellRegistry registry = new SpellRegistry();
-        registry.register(new Spell("fireball", "Fireball", 20, 1));
+        registry.register(new Spell("fireball", "Fireball", "Boom", 20));
         SpellEngine engine = new SpellEngine(registry);
         PlayerMagicProfile profile = new PlayerMagicProfile();
 
@@ -88,11 +102,10 @@ class MagicModTest {
         assertEquals(expAfterFirstCraft, profile.magicExperience());
     }
 
-
     @Test
     void castDetailedReturnsSpecificReasons() {
         SpellRegistry registry = new SpellRegistry();
-        registry.register(new Spell("blink", "Blink", 15, 99));
+        registry.register(new Spell("blink", "Blink", "Jump", 15));
         SpellEngine engine = new SpellEngine(registry);
         PlayerMagicProfile profile = new PlayerMagicProfile();
 
@@ -105,10 +118,11 @@ class MagicModTest {
         }
         assertEquals(SpellEngine.CastResult.NOT_ENOUGH_MANA, engine.castBoundSpellDetailed(profile, 1));
     }
+
     @Test
     void castDetailedSuccessWhenRequirementsMet() {
         SpellRegistry registry = new SpellRegistry();
-        registry.register(new Spell("fireball", "Fireball", 20, 1));
+        registry.register(new Spell("fireball", "Fireball", "Boom", 20));
         SpellEngine engine = new SpellEngine(registry);
         PlayerMagicProfile profile = new PlayerMagicProfile();
 
@@ -117,5 +131,4 @@ class MagicModTest {
 
         assertEquals(SpellEngine.CastResult.SUCCESS, engine.castBoundSpellDetailed(profile, 3));
     }
-
 }

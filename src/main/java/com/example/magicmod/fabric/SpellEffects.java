@@ -9,6 +9,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -21,6 +22,8 @@ public final class SpellEffects {
             case "fireball" -> castFireball(caster);
             case "blink" -> castBlink(caster);
             case "ice_spike" -> castIceSpike(caster);
+            case "arcane_pulse" -> castArcanePulse(caster);
+            case "healing_wave" -> castHealingWave(caster);
             default -> false;
         };
     }
@@ -32,9 +35,9 @@ public final class SpellEffects {
                 ? caster.getPos().add(caster.getRotationVec(1.0F).multiply(16.0))
                 : hit.getPos();
 
-        world.createExplosion(caster, target.x, target.y, target.z, 2.7F, World.ExplosionSourceType.MOB);
-        world.spawnParticles(ParticleTypes.FLAME, target.x, target.y + 0.2, target.z, 20, 0.8, 0.3, 0.8, 0.02);
-        world.playSound(null, target.x, target.y, target.z, SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 0.9F, 0.8F);
+        world.createExplosion(caster, target.x, target.y, target.z, 2.4F, World.ExplosionSourceType.MOB);
+        world.spawnParticles(ParticleTypes.FLAME, target.x, target.y + 0.2, target.z, 24, 0.8, 0.3, 0.8, 0.03);
+        world.playSound(null, target.x, target.y, target.z, SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 0.9F, 0.85F);
         return true;
     }
 
@@ -57,13 +60,43 @@ public final class SpellEffects {
         int affected = 0;
 
         for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, caster.getBoundingBox().expand(4.0), e -> e != caster)) {
-            entity.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 2));
-            entity.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 80, 1));
+            entity.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 120, 2));
+            entity.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 100, 1));
             affected++;
         }
 
         world.spawnParticles(ParticleTypes.SNOWFLAKE, pos.x, pos.y + 1.0, pos.z, 70, 2.5, 1.0, 2.5, 0.02);
         world.playSound(null, pos.x, pos.y, pos.z, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 0.8F, 0.7F);
         return affected > 0;
+    }
+
+    private static boolean castArcanePulse(ServerPlayerEntity caster) {
+        ServerWorld world = caster.getServerWorld();
+        Vec3d center = caster.getPos().add(0, 1.0, 0);
+        int affected = 0;
+        for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, Box.of(center, 6.0, 3.0, 6.0), e -> e != caster)) {
+            Vec3d push = entity.getPos().subtract(caster.getPos()).normalize().multiply(1.2);
+            entity.addVelocity(push.x, 0.4, push.z);
+            entity.velocityModified = true;
+            entity.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 60, 0));
+            affected++;
+        }
+        world.spawnParticles(ParticleTypes.ENCHANT, center.x, center.y, center.z, 60, 2.0, 1.0, 2.0, 0.05);
+        world.playSound(null, center.x, center.y, center.z, SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.8F, 1.0F);
+        return affected > 0;
+    }
+
+    private static boolean castHealingWave(ServerPlayerEntity caster) {
+        ServerWorld world = caster.getServerWorld();
+        float healed = Math.min(caster.getMaxHealth(), caster.getHealth() + 6.0F);
+        caster.setHealth(healed);
+        caster.removeStatusEffect(StatusEffects.POISON);
+        caster.removeStatusEffect(StatusEffects.WITHER);
+        caster.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0));
+
+        Vec3d pos = caster.getPos();
+        world.spawnParticles(ParticleTypes.HEART, pos.x, pos.y + 1.2, pos.z, 12, 0.6, 0.6, 0.6, 0.01);
+        world.playSound(null, pos.x, pos.y, pos.z, SoundEvents.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, SoundCategory.PLAYERS, 0.9F, 1.1F);
+        return true;
     }
 }

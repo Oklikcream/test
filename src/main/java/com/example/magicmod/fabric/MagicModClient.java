@@ -53,7 +53,9 @@ public class MagicModClient implements ClientModInitializer {
             for (int i = 0; i < learnedSize; i++) {
                 String spellId = buf.readString();
                 String displayName = buf.readString();
-                learned.add(new LearnedSpellEntry(spellId, displayName));
+                String description = buf.readString();
+                int manaCost = buf.readInt();
+                learned.add(new LearnedSpellEntry(spellId, displayName, description, manaCost));
             }
 
             List<String> bound = new ArrayList<>();

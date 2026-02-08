@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MagicBindScreen extends Screen {
-    private static final LearnedSpellEntry EMPTY = new LearnedSpellEntry("", "Пусто");
+    private static final LearnedSpellEntry EMPTY = new LearnedSpellEntry("", "Пусто", "Очистить слот.", 0);
 
     private final MagicUiState state;
     private final List<LearnedSpellEntry> options;
@@ -72,6 +72,18 @@ public class MagicBindScreen extends Screen {
 
         int left = this.width / 2 - 160;
         int top = this.height / 2 - 104;
-        context.drawText(this.textRenderer, Text.literal("Бинды заклинаний"), left, top, 0xFFFFFF, false);
+        context.drawText(this.textRenderer, Text.literal("Бинды заклинаний | Lv." + state.level() + " | Мана: " + state.mana() + "/" + state.maxMana()), left, top, 0xFFFFFF, false);
+
+        int detailsY = top + 112;
+        context.drawText(this.textRenderer, Text.literal("Изученные заклинания:"), left, detailsY, 0x9AD0FF, false);
+        int row = 0;
+        for (LearnedSpellEntry entry : state.learnedSpells()) {
+            context.drawText(this.textRenderer, Text.literal("• " + entry.displayName() + " (" + entry.manaCost() + " маны)"), left, detailsY + 12 + row * 10, 0xFFFFFF, false);
+            context.drawText(this.textRenderer, Text.literal("  " + entry.description()), left, detailsY + 21 + row * 10, 0xBBBBBB, false);
+            row += 3;
+            if (row > 9) {
+                break;
+            }
+        }
     }
 }
