@@ -1,15 +1,20 @@
 package com.example.magicmod.fabric;
 
+import com.example.magicmod.Spell;
 import com.example.magicmod.SpellScroll;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public class SpellScrollItem extends Item {
     public static final String SPELL_ID_KEY = "spellId";
@@ -49,5 +54,23 @@ public class SpellScrollItem extends Item {
             user.sendMessage(Text.literal("Заклинание уже изучено или не существует."), true);
         }
         return new TypedActionResult<>(ActionResult.PASS, stack);
+    }
+
+    @Override
+    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context) {
+        String spellId = stack.getOrCreateNbt().getString(SPELL_ID_KEY);
+        if (spellId.isBlank()) {
+            tooltip.add(Text.literal("Записанное заклинание: отсутствует").formatted(Formatting.GRAY));
+            return;
+        }
+
+        Spell spell = MagicModFabric.SPELL_REGISTRY.get(spellId);
+        if (spell == null) {
+            tooltip.add(Text.literal("Записанное заклинание: " + spellId).formatted(Formatting.GRAY));
+            return;
+        }
+
+        tooltip.add(Text.literal("Записанное заклинание: " + spell.displayName()).formatted(Formatting.AQUA));
+        tooltip.add(Text.literal("Расход маны: " + spell.manaCost()).formatted(Formatting.BLUE));
     }
 }

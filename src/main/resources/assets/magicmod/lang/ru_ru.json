@@ -1,5 +1,6 @@
 {
   "item.magicmod.spell_scroll": "Свиток заклинания",
   "item.magicmod.blank_scroll": "Пустой свиток",
-  "item.magicmod.magic_book": "Книга мага"
+  "item.magicmod.magic_book": "Книга мага",
+  "item.magicmod.mana_potion": "Зелье маны"
 }
