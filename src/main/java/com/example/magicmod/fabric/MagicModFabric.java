@@ -9,9 +9,13 @@ import com.example.magicmod.SpellEngine.CastResult;
 import com.example.magicmod.SpellRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.item.ItemGroups;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.recipe.BrewingRecipeRegistry;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -38,6 +42,7 @@ public class MagicModFabric implements ModInitializer {
     public static final Item SPELL_SCROLL_ITEM = new SpellScrollItem(new FabricItemSettings().maxCount(1));
     public static final Item MAGIC_BOOK_ITEM = new com.example.magicmod.fabric.MagicBookItem(new FabricItemSettings().maxCount(1));
     public static final Item BLANK_SCROLL_ITEM = new BlankScrollItem(new FabricItemSettings().maxCount(64));
+    public static final Item MANA_POTION_ITEM = new ManaPotionItem(new FabricItemSettings().maxCount(16));
 
     public static final SpellRegistry SPELL_REGISTRY = new SpellRegistry();
     public static final SpellEngine SPELL_ENGINE = new SpellEngine(SPELL_REGISTRY);
@@ -48,6 +53,16 @@ public class MagicModFabric implements ModInitializer {
         Registry.register(Registries.ITEM, id("spell_scroll"), SPELL_SCROLL_ITEM);
         Registry.register(Registries.ITEM, id("magic_book"), MAGIC_BOOK_ITEM);
         Registry.register(Registries.ITEM, id("blank_scroll"), BLANK_SCROLL_ITEM);
+        Registry.register(Registries.ITEM, id("mana_potion"), MANA_POTION_ITEM);
+
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(MANA_POTION_ITEM));
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
+            entries.add(BLANK_SCROLL_ITEM);
+            entries.add(SPELL_SCROLL_ITEM);
+            entries.add(MAGIC_BOOK_ITEM);
+        });
+
+        BrewingRecipeRegistry.registerItemRecipe(Items.POTION, Items.LAPIS_LAZULI, MANA_POTION_ITEM);
 
         SPELL_REGISTRY.register(new Spell("fireball", "Огненный шар", "Мощный взрыв на дистанции. Большой урон по области.", 28));
         SPELL_REGISTRY.register(new Spell("blink", "Скачок", "Быстрый телепорт вперёд, чтобы сменить позицию.", 18));
