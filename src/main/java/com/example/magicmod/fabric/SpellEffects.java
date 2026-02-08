@@ -3,19 +3,24 @@ package com.example.magicmod.fabric;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 import java.util.List;
 
 public final class SpellEffects {
+    private static final double PROJECTILE_STEP = 0.7;
+
     private SpellEffects() {
     }
 
@@ -39,29 +44,52 @@ public final class SpellEffects {
 
     private static boolean castFireball(ServerPlayerEntity caster) {
         ServerWorld world = caster.getServerWorld();
-        HitResult hit = caster.raycast(24.0, 0.0F, false);
-        Vec3d target = hit.getType() == HitResult.Type.MISS
-                ? caster.getPos().add(caster.getRotationVec(1.0F).multiply(16.0))
-                : hit.getPos();
+        Vec3d start = caster.getEyePos();
+        Vec3d direction = caster.getRotationVec(1.0F).normalize();
+        ProjectilePath path = traceProjectile(world, caster, start, direction, 24.0, ParticleTypes.SMALL_FLAME);
 
-        world.createExplosion(caster, target.x, target.y, target.z, 2.4F, World.ExplosionSourceType.MOB);
-        applyAreaMagicDamage(world, caster, target, 4.5, 9.0F, true);
-        world.spawnParticles(ParticleTypes.FLAME, target.x, target.y + 0.2, target.z, 24, 0.8, 0.3, 0.8, 0.03);
-        world.playSound(null, target.x, target.y, target.z, SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 0.9F, 0.85F);
+        world.playSound(null, start.x, start.y, start.z, SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 0.9F, 1.0F);
+        world.createExplosion(caster, path.impact().x, path.impact().y, path.impact().z, 2.4F, World.ExplosionSourceType.MOB);
+        applyAreaMagicDamage(world, caster, path.impact(), 4.5, 9.0F, true);
+        world.spawnParticles(ParticleTypes.FLAME, path.impact().x, path.impact().y + 0.2, path.impact().z, 24, 0.8, 0.3, 0.8, 0.03);
         return true;
     }
 
     private static boolean castBlink(ServerPlayerEntity caster) {
         ServerWorld world = caster.getServerWorld();
-        Vec3d direction = caster.getRotationVec(1.0F).normalize();
         Vec3d from = caster.getPos();
-        Vec3d to = from.add(direction.multiply(8.0));
+        Vec3d start = caster.getEyePos();
+        Vec3d direction = caster.getRotationVec(1.0F).normalize();
+        ProjectilePath path = traceProjectile(world, caster, start, direction, 12.0, ParticleTypes.PORTAL);
 
-        caster.requestTeleport(to.x, to.y, to.z);
+        Vec3d destination = path.hitBlock()
+                ? path.impact().subtract(direction.multiply(1.0))
+                : path.impact();
+
+        caster.requestTeleport(destination.x, destination.y, destination.z);
         world.spawnParticles(ParticleTypes.PORTAL, from.x, from.y + 1.0, from.z, 35, 0.3, 0.8, 0.3, 0.02);
-        world.spawnParticles(ParticleTypes.PORTAL, to.x, to.y + 1.0, to.z, 35, 0.3, 0.8, 0.3, 0.02);
-        world.playSound(null, to.x, to.y, to.z, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.7F, 1.2F);
+        world.spawnParticles(ParticleTypes.PORTAL, destination.x, destination.y + 1.0, destination.z, 35, 0.3, 0.8, 0.3, 0.02);
+        world.playSound(null, destination.x, destination.y, destination.z, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.7F, 1.2F);
         return true;
+    }
+
+    private static ProjectilePath traceProjectile(ServerWorld world, ServerPlayerEntity caster, Vec3d start, Vec3d direction, double maxDistance, ParticleEffect trailParticle) {
+        Vec3d previous = start;
+        Vec3d impact = start.add(direction.multiply(maxDistance));
+        boolean hitBlock = false;
+        for (double traveled = PROJECTILE_STEP; traveled <= maxDistance; traveled += PROJECTILE_STEP) {
+            Vec3d current = start.add(direction.multiply(traveled));
+            BlockHitResult hit = world.raycast(new RaycastContext(previous, current, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, caster));
+            world.spawnParticles(trailParticle, current.x, current.y, current.z, 2, 0.04, 0.04, 0.04, 0.0);
+            if (hit.getType() != HitResult.Type.MISS) {
+                impact = hit.getPos();
+                hitBlock = true;
+                break;
+            }
+            impact = current;
+            previous = current;
+        }
+        return new ProjectilePath(impact, hitBlock);
     }
 
     private static boolean castIceSpike(ServerPlayerEntity caster) {
@@ -126,5 +154,8 @@ public final class SpellEffects {
         world.spawnParticles(ParticleTypes.HEART, pos.x, pos.y + 1.2, pos.z, 12, 0.6, 0.6, 0.6, 0.01);
         world.playSound(null, pos.x, pos.y, pos.z, SoundEvents.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, SoundCategory.PLAYERS, 0.9F, 1.1F);
         return true;
+    }
+
+    private record ProjectilePath(Vec3d impact, boolean hitBlock) {
     }
 }
