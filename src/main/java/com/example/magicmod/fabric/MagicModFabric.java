@@ -23,7 +23,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -164,7 +163,7 @@ public class MagicModFabric implements ModInitializer {
                     player.giveItemStack(SpellScrollItem.createForSpell(result.spellId()));
                     player.sendMessage(Text.literal("Создан свиток: " + result.spellId()).formatted(Formatting.GREEN), true);
                 } else if (result.type() == ArcaneCraftingResult.ResultType.MAGIC_EXPLOSION) {
-                    player.getWorld().createExplosion(player, player.getX(), player.getY(), player.getZ(), 2.0f, World.ExplosionSourceType.MOB);
+                    SpellEffects.triggerMiscastExplosion(player);
                 } else {
                     player.sendMessage(Text.literal("Ничего не получилось."), true);
                 }

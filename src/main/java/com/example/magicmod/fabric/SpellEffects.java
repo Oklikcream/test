@@ -30,6 +30,13 @@ public final class SpellEffects {
         };
     }
 
+    public static void triggerMiscastExplosion(ServerPlayerEntity caster) {
+        ServerWorld world = caster.getServerWorld();
+        Vec3d center = caster.getPos();
+        world.createExplosion(caster, center.x, center.y, center.z, 2.0F, World.ExplosionSourceType.MOB);
+        applyAreaMagicDamage(world, caster, center, 4.0, 8.0F, true);
+    }
+
     private static boolean castFireball(ServerPlayerEntity caster) {
         ServerWorld world = caster.getServerWorld();
         HitResult hit = caster.raycast(24.0, 0.0F, false);
@@ -38,6 +45,7 @@ public final class SpellEffects {
                 : hit.getPos();
 
         world.createExplosion(caster, target.x, target.y, target.z, 2.4F, World.ExplosionSourceType.MOB);
+        applyAreaMagicDamage(world, caster, target, 4.5, 9.0F, true);
         world.spawnParticles(ParticleTypes.FLAME, target.x, target.y + 0.2, target.z, 24, 0.8, 0.3, 0.8, 0.03);
         world.playSound(null, target.x, target.y, target.z, SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 0.9F, 0.85F);
         return true;
@@ -94,6 +102,16 @@ public final class SpellEffects {
 
     private static List<LivingEntity> nearbyTargets(ServerWorld world, ServerPlayerEntity caster, Box area) {
         return world.getEntitiesByClass(LivingEntity.class, area, entity -> entity != caster);
+    }
+
+    private static void applyAreaMagicDamage(ServerWorld world, ServerPlayerEntity caster, Vec3d center, double radius, float damage, boolean includeCaster) {
+        double radiusSquared = radius * radius;
+        Box area = Box.of(center, radius * 2.0, radius * 2.0, radius * 2.0);
+        List<LivingEntity> targets = world.getEntitiesByClass(LivingEntity.class, area,
+                entity -> (includeCaster || entity != caster) && entity.squaredDistanceTo(center) <= radiusSquared);
+        for (LivingEntity entity : targets) {
+            entity.damage(world.getDamageSources().magic(), damage);
+        }
     }
 
     private static boolean castHealingWave(ServerPlayerEntity caster) {
