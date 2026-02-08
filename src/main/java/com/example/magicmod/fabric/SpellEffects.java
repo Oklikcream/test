@@ -13,6 +13,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
+import java.util.List;
+
 public final class SpellEffects {
     private SpellEffects() {
     }
@@ -59,7 +61,9 @@ public final class SpellEffects {
         Vec3d pos = caster.getPos();
         int affected = 0;
 
-        for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, caster.getBoundingBox().expand(4.0), e -> e != caster)) {
+        List<LivingEntity> targets = nearbyTargets(world, caster, caster.getBoundingBox().expand(4.0));
+        for (LivingEntity entity : targets) {
+            entity.damage(world.getDamageSources().magic(), 5.0F);
             entity.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 120, 2));
             entity.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 100, 1));
             affected++;
@@ -74,8 +78,10 @@ public final class SpellEffects {
         ServerWorld world = caster.getServerWorld();
         Vec3d center = caster.getPos().add(0, 1.0, 0);
         int affected = 0;
-        for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, Box.of(center, 6.0, 3.0, 6.0), e -> e != caster)) {
+        List<LivingEntity> targets = nearbyTargets(world, caster, Box.of(center, 6.0, 3.0, 6.0));
+        for (LivingEntity entity : targets) {
             Vec3d push = entity.getPos().subtract(caster.getPos()).normalize().multiply(1.2);
+            entity.damage(world.getDamageSources().magic(), 4.0F);
             entity.addVelocity(push.x, 0.4, push.z);
             entity.velocityModified = true;
             entity.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 60, 0));
@@ -84,6 +90,10 @@ public final class SpellEffects {
         world.spawnParticles(ParticleTypes.ENCHANT, center.x, center.y, center.z, 60, 2.0, 1.0, 2.0, 0.05);
         world.playSound(null, center.x, center.y, center.z, SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.8F, 1.0F);
         return affected > 0;
+    }
+
+    private static List<LivingEntity> nearbyTargets(ServerWorld world, ServerPlayerEntity caster, Box area) {
+        return world.getEntitiesByClass(LivingEntity.class, area, entity -> entity != caster);
     }
 
     private static boolean castHealingWave(ServerPlayerEntity caster) {
