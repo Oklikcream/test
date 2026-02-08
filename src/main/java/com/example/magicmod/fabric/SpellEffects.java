@@ -1,5 +1,6 @@
 package com.example.magicmod.fabric;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -10,12 +11,14 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
+import java.util.Comparator;
 import java.util.List;
 
 public final class SpellEffects {
@@ -62,7 +65,7 @@ public final class SpellEffects {
         Vec3d direction = caster.getRotationVec(1.0F).normalize();
         ProjectilePath path = traceProjectile(world, caster, start, direction, 12.0, ParticleTypes.PORTAL);
 
-        Vec3d destination = path.hitBlock()
+        Vec3d destination = path.hitAnything()
                 ? path.impact().subtract(direction.multiply(1.0))
                 : path.impact();
 
@@ -76,20 +79,48 @@ public final class SpellEffects {
     private static ProjectilePath traceProjectile(ServerWorld world, ServerPlayerEntity caster, Vec3d start, Vec3d direction, double maxDistance, ParticleEffect trailParticle) {
         Vec3d previous = start;
         Vec3d impact = start.add(direction.multiply(maxDistance));
-        boolean hitBlock = false;
+        boolean hitAnything = false;
+
         for (double traveled = PROJECTILE_STEP; traveled <= maxDistance; traveled += PROJECTILE_STEP) {
             Vec3d current = start.add(direction.multiply(traveled));
-            BlockHitResult hit = world.raycast(new RaycastContext(previous, current, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, caster));
+            BlockHitResult blockHit = world.raycast(new RaycastContext(previous, current, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, caster));
+            EntityHitResult entityHit = raycastEntity(world, caster, previous, current);
+
             world.spawnParticles(trailParticle, current.x, current.y, current.z, 2, 0.04, 0.04, 0.04, 0.0);
-            if (hit.getType() != HitResult.Type.MISS) {
-                impact = hit.getPos();
-                hitBlock = true;
+
+            if (entityHit != null && (blockHit.getType() == HitResult.Type.MISS || entityHit.getPos().squaredDistanceTo(previous) <= blockHit.getPos().squaredDistanceTo(previous))) {
+                impact = entityHit.getPos();
+                hitAnything = true;
                 break;
             }
+            if (blockHit.getType() != HitResult.Type.MISS) {
+                impact = blockHit.getPos();
+                hitAnything = true;
+                break;
+            }
+
             impact = current;
             previous = current;
         }
-        return new ProjectilePath(impact, hitBlock);
+        return new ProjectilePath(impact, hitAnything);
+    }
+
+    private static EntityHitResult raycastEntity(ServerWorld world, ServerPlayerEntity caster, Vec3d start, Vec3d end) {
+        Box scanBox = new Box(start, end).expand(0.4);
+        List<Entity> entities = world.getOtherEntities(caster, scanBox,
+                entity -> entity instanceof LivingEntity && entity.isAlive() && entity.isAttackable());
+
+        return entities.stream()
+                .map(entity -> raycastEntityBox(entity, start, end))
+                .filter(result -> result != null)
+                .min(Comparator.comparingDouble(result -> result.getPos().squaredDistanceTo(start)))
+                .orElse(null);
+    }
+
+    private static EntityHitResult raycastEntityBox(Entity entity, Vec3d start, Vec3d end) {
+        return entity.getBoundingBox().expand(0.2).raycast(start, end)
+                .map(hitPos -> new EntityHitResult(entity, hitPos))
+                .orElse(null);
     }
 
     private static boolean castIceSpike(ServerPlayerEntity caster) {
@@ -156,6 +187,6 @@ public final class SpellEffects {
         return true;
     }
 
-    private record ProjectilePath(Vec3d impact, boolean hitBlock) {
+    private record ProjectilePath(Vec3d impact, boolean hitAnything) {
     }
 }
