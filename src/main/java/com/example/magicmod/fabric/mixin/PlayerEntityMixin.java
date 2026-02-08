@@ -19,7 +19,10 @@ public class PlayerEntityMixin implements MagicPlayerDataHolder {
     private static final int MANA_REGEN_EVERY_TICKS = 20;
 
     @Unique
-    private static final int MANA_REGEN_AMOUNT = 2;
+    private static final int BASE_MANA_REGEN_AMOUNT = 2;
+
+    @Unique
+    private static final int BONUS_REGEN_EVERY_LEVELS = 5;
 
     @Unique
     private final PlayerMagicProfile magicmod$profile = new PlayerMagicProfile();
@@ -47,7 +50,8 @@ public class PlayerEntityMixin implements MagicPlayerDataHolder {
         if (!(player instanceof ServerPlayerEntity) || player.getWorld().getTime() % MANA_REGEN_EVERY_TICKS != 0) {
             return;
         }
-        magicmod$profile.regenerateMana(MANA_REGEN_AMOUNT);
+        int levelBonus = Math.max(0, (magicmod$profile.magicLevel() - 1) / BONUS_REGEN_EVERY_LEVELS);
+        magicmod$profile.regenerateMana(BASE_MANA_REGEN_AMOUNT + levelBonus);
         MagicModFabric.sendHudSyncPacket((ServerPlayerEntity) player);
     }
 }
